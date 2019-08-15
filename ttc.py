@@ -165,6 +165,13 @@ class Situation:
                         cell.enable()
                     else:
                         cell.disable()
+        elif self.pattern == "down":
+            for col in self.cells:
+                for y, cell in enumerate(col):
+                    if not (y+self.beat_counter)%size[1]:
+                        cell.enable()
+                    else:
+                        cell.disable()
         else:
             for row in self.cells:
                 [cell.enable() for cell in row]
@@ -334,6 +341,10 @@ class Situation:
         rand3  = tk.Button(self.control, text="random 50%")
         rand3.grid(row=8, column=0)
         rand3.bind("<1>", lambda d:self.set_pattern("rand3"))
+        
+        down  = tk.Button(self.control, text="top to bottom")
+        down.grid(row=9, column=0)
+        down.bind("<1>", lambda d:self.set_pattern("down"))
 
 
         
