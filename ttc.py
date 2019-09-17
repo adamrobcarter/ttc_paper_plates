@@ -172,6 +172,32 @@ class Situation:
                         cell.enable()
                     else:
                         cell.disable()
+        elif self.pattern == "alt lr":
+            for x, col in enumerate(self.cells):
+                if x < size[0]/2:
+                    if self.beat_counter%2:
+                        [cell.enable() for cell in col]
+                    else:
+                        [cell.disable() for cell in col]
+                else:
+                    if self.beat_counter%2:
+                        [cell.disable() for cell in col]
+                    else:
+                        [cell.enable() for cell in col]
+        elif self.pattern == "alt tb":
+            for col in self.cells:
+                for y, cell in enumerate(col):
+                    if y < size[1]/2:
+                        if self.beat_counter%2:
+                            cell.enable()
+                        else:
+                            cell.disable()
+                    else:
+                        if self.beat_counter%2:
+                            cell.disable()
+                        else:
+                            cell.enable()
+                    
         else:
             for row in self.cells:
                 [cell.enable() for cell in row]
@@ -182,15 +208,19 @@ class Situation:
         lateness = 0
         
         if not auto and (cl - self.beat_start_time) < 70: #this prevents two beats firing when user taps just after the last automatic beat hit
-            #print(cl - self.beat_start_time)
             pass
         else:
-            if auto:
+            #following lines moved from the top of tap()
+            if hasattr(self, 'tick_job'): # these ifs only fail right at the start of a run
+                self.canvas.after_cancel(self.tick_job) # cancel current tick
+            if hasattr(self, 'beat_job'):
+                self.canvas.after_cancel(self.beat_job) # cancel current beat
+        
+            if auto: # if this beat was triggered automatically, let's calculate how late it was
                 lateness = cl - self.beat_start_time - self.tempo
-                #print(lateness)
+
             self.beat_job = self.canvas.after(self.tempo - lateness,self.beat,True)
             self.beat_start_time = cl
-
 
             #make right cells active
             self.set_cells()
@@ -198,7 +228,7 @@ class Situation:
             self.animate()
             self.beat_counter += 1
 
-    def animate(self):
+    def animate(self): # this is a one shot function, it plays one animation then stops
         time = clock() - self.beat_start_time
         if time < self.tempo:
             for col in self.cells:
@@ -207,11 +237,10 @@ class Situation:
                         cell.tick( time / self.tempo )
                     
             self.tick_job = self.canvas.after(frame, self.animate)
+        else:
+            print("animate else",time)
 
     def tap(self, params):
-        self.canvas.after_cancel(self.tick_job) # cancel current tick
-        self.canvas.after_cancel(self.beat_job) # cancel current beat
-
         # do tap tempo logic
         now = clock()
         if now - self.last_taps[0] < 2000: # adding to an already started series of taps
@@ -222,7 +251,7 @@ class Situation:
                 self.last_taps.pop()
 
             #self.beat(False) # call new beat
-        else:
+        else: # starting a new tap after a while running automatically
             self.last_taps = [now]
 
         self.beat(False) # call new beat
@@ -345,6 +374,14 @@ class Situation:
         down  = tk.Button(self.control, text="top to bottom")
         down.grid(row=9, column=0)
         down.bind("<1>", lambda d:self.set_pattern("down"))
+        
+        down  = tk.Button(self.control, text="alternate L/R")
+        down.grid(row=10, column=0)
+        down.bind("<1>", lambda d:self.set_pattern("alt lr"))
+        
+        down  = tk.Button(self.control, text="alt. top/bottom")
+        down.grid(row=11, column=0)
+        down.bind("<1>", lambda d:self.set_pattern("alt tb"))
 
 
         
